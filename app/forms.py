@@ -1,15 +1,15 @@
 # -*- coding: UTF-8 -*-
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 from wtforms import StringField, TextField
 from wtforms.validators import DataRequired, Length
 
 
-class CommentForm(Form):
+class CommentForm(FlaskForm):
     """ Form vaildator for comment."""
 
     name = StringField(
         'Name',
-        vaildators=[DataRequired(), Length(max=255)]
+        validators=[DataRequired(), Length(max=255)]
     )
 
     text = TextField(u'Comment', validators=[DataRequired()])

@@ -15,4 +15,4 @@ class DevConfig(Config):
     # Open the DEBUG
     DEBUG = True
     #MySQL connection
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:11444@127.0.0.1:3306/flask-blog'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:#^hi3%X#@127.0.0.1:3306/flask-blog'

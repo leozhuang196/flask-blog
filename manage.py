@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 from flask_script import Manager, Server
 from flask_migrate import Migrate, MigrateCommand
-import main
-import models
+from app import app
+import app.models
 
 # Init manager object via app object
 manager = Manager(main.app)
@@ -12,8 +12,7 @@ migrate = Migrate(main.app, models.db)
 
 # Create a new commands: server
 # This command will be run the Flask development_env server
-manager.add_command("server", Server())
-manager.add_command("server", Server())
+manager.add_command("server", Server(host='0.0.0.0', port=8080))
 manager.add_command("db", MigrateCommand)
 
 
