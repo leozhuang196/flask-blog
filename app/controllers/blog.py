@@ -1,12 +1,15 @@
 # -*- coding: UTF-8 -*-
-from flask import render_template, Blueprint
+from flask import render_template, Blueprint, redirect, url_for
+from flask_login import login_required, current_user
+from flask_principal import Permission, UserNeed, RoleNeed
 from sqlalchemy import func
 
 from app.models import db, User, Post, Tag, Comment, posts_tags
 from datetime import datetime
 from os import path
 from uuid import uuid4
-from app.forms import CommentForm
+from app.forms import CommentForm, PostForm
+from app.extensions import admin_permission, poster_permission, default_permission
 
 blog_blueprint = Blueprint(
     'blog',
@@ -32,6 +35,7 @@ def sidebar_data():
 
 @blog_blueprint.route('/')
 @blog_blueprint.route('/<int:page>')
+@login_required
 def home(page=1):
     """View function for home page"""
 
@@ -48,6 +52,7 @@ def home(page=1):
 
 
 @blog_blueprint.route('/post/<string:post_id>', methods=('GET', 'POST'))
+@login_required
 def post(post_id):
     """View function for post page"""
 
@@ -60,7 +65,7 @@ def post(post_id):
         new_comment = Comment(id=str(uuid4()),
                               name=form.name.data)
         new_comment.text = form.text.data
-        new_comment.date = datetime.datetime.now()
+        new_comment.date = datetime.now()
         new_comment.post_id = post_id
         db.session.add(new_comment)
         db.session.commit()
@@ -80,6 +85,7 @@ def post(post_id):
 
 
 @blog_blueprint.route('/tag/<string:tag_name>')
+@login_required
 def tag(tag_name):
     """View function for tag page"""
 
@@ -95,6 +101,7 @@ def tag(tag_name):
 
 
 @blog_blueprint.route('/user/<string:username>')
+@login_required
 def user(username):
     """View function for user page"""
     user = db.session.query(User).filter_by(username=username).first_or_404()
@@ -106,3 +113,69 @@ def user(username):
                            posts=posts,
                            recent=recent,
                            top_tags=top_tags)
+
+@blog_blueprint.route('/new', methods=['GET', 'POST'])
+@login_required
+def new_post():
+    """View function for new_port."""
+    form = PostForm()
+
+    # Ensure the user logged in.
+    # Flask-Login.current_user can be access current user.
+    if not current_user:
+        return redirect(url_for('main.login'))
+
+    if form.validate_on_submit():
+        new_post = Post(id=str(uuid4()), title=form.title.data)
+        new_post.text = form.text.data
+        new_post.publish_date = datetime.now()
+        new_post.users = current_user
+
+        db.session.add(new_post)
+        db.session.commit()
+        return redirect(url_for('blog.home'))
+
+    return render_template('new_post.html',
+                           form=form)
+
+
+@blog_blueprint.route('/edit/<string:id>', methods=['GET', 'POST'])
+@login_required
+@poster_permission.require(http_exception=403)
+def edit_post(id):
+    """View function for edit_post."""
+
+    post = Post.query.get_or_404(id)
+    form = PostForm()
+
+    # Ensure the user logged in.
+    if not current_user:
+        return redirect(url_for('main.login'))
+
+    # Only the post onwer can be edit this post.
+    if current_user != post.users:
+        return redirect(url_for('blog.post', post_id=id))
+
+    # 当 user 是 poster 或者 admin 时, 才能够编辑文章
+    # Admin can be edit the post.
+    permission = Permission(UserNeed(post.users.id))
+    if permission.can() or admin_permission.can():
+
+        # if current_user != post.users:
+        #    abort(403)
+
+        if form.validate_on_submit():
+            post.title = form.title.data
+            post.text = form.text.data
+            post.publish_date = datetime.now()
+
+            # Update the post
+            db.session.add(post)
+            db.session.commit()
+            return redirect(url_for('blog.post', post_id=post.id))
+    else:
+        return redirect(url_for('blog.post', post_id=id))
+
+    form.title.data = post.title
+    form.text.data = post.text
+    return render_template('edit_post.html', form=form, post=post)

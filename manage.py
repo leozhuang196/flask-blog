@@ -2,7 +2,8 @@
 from flask_script import Manager, Server
 from flask_migrate import Migrate, MigrateCommand
 from app import create_app
-from app.models import db
+from app.models import db, User, Post, Comment, Tag, Role
+import app.models
 from app.config import DevConfig
 
 # Create thr app instance via Factory Method
@@ -21,12 +22,13 @@ manager.add_command("db", MigrateCommand)
 
 @manager.shell
 def make_shell_context():
-    return dict(app=main.app,
-                db=models.db,
-                User=models.User,
-                Post=models.Post,
-                Comment=models.Comment,
-                Tag=models.Tag)
+    return dict(app=app,
+                db=db,
+                User=User,
+                Post=Post,
+                Comment=Comment,
+                Tag=Tag,
+                Role=Role)
 
 
 if __name__ == '__main__':
