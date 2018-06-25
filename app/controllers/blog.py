@@ -2,12 +2,11 @@
 from flask import render_template, Blueprint
 from sqlalchemy import func
 
-from main import app
-from models import db, User, Post, Tag, Comment, posts_tags
+from app.models import db, User, Post, Tag, Comment, posts_tags
 from datetime import datetime
 from os import path
 from uuid import uuid4
-from wt_forms import CommentForm
+from app.forms import CommentForm
 
 blog_blueprint = Blueprint(
     'blog',
